@@ -1,0 +1,5 @@
+This file is written by the ambiguous scenario's rollback drill stage to prove the
+rollback mechanism actually reverts a real filesystem change, isolated from the real
+feature change in this run. If you are reading this file, the rollback did not run
+(or failed) -- it should not exist once the scenario has completed. See
+docs/scenarios/03-ambiguous.md.

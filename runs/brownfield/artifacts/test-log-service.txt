@@ -1,0 +1,73 @@
+Compiling main sources...
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/root/.ccr/java-truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=32959 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes=
+common/src/main/java/com/schwab/common/json/Json.java:128: warning: [serial] serializable class JsonParseException has no definition of serialVersionUID
+    public static class JsonParseException extends RuntimeException {
+                  ^
+service/src/main/java/com/schwab/urlshortener/model/ServiceExceptions.java:9: warning: [serial] serializable class InvalidUrlException has no definition of serialVersionUID
+    public static final class InvalidUrlException extends RuntimeException {
+                        ^
+service/src/main/java/com/schwab/urlshortener/model/ServiceExceptions.java:15: warning: [serial] serializable class AliasConflictException has no definition of serialVersionUID
+    public static final class AliasConflictException extends RuntimeException {
+                        ^
+service/src/main/java/com/schwab/urlshortener/model/ServiceExceptions.java:21: warning: [serial] serializable class UrlNotFoundException has no definition of serialVersionUID
+    public static final class UrlNotFoundException extends RuntimeException {
+                        ^
+service/src/main/java/com/schwab/urlshortener/model/ServiceExceptions.java:27: warning: [serial] serializable class UrlGoneException has no definition of serialVersionUID
+    public static final class UrlGoneException extends RuntimeException {
+                        ^
+service/src/main/java/com/schwab/urlshortener/model/ServiceExceptions.java:33: warning: [serial] serializable class RateLimitExceededException has no definition of serialVersionUID
+    public static final class RateLimitExceededException extends RuntimeException {
+                        ^
+orchestrator/src/main/java/com/schwab/orchestrator/governance/PolicyViolationException.java:10: warning: [serial] serializable class PolicyViolationException has no definition of serialVersionUID
+public final class PolicyViolationException extends Exception {
+             ^
+7 warnings
+Main sources compiled to /root/work/agentic-url-shortener/out/classes
+Compiling test sources...
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/root/.ccr/java-truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=32959 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes=
+Running tests: service
+Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStore=/root/.ccr/java-truststore.p12 -Djavax.net.ssl.trustStorePassword=changeit -Djavax.net.ssl.trustStoreType=PKCS12 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=32959 -Dhttp.nonProxyHosts=localhost|127.0.0.1|::1|127.*|0.*|::|169.254.*|api.anthropic.com|api-staging.anthropic.com|api-pr-preview.anthropic.com|mcp-proxy.anthropic.com|mcp-proxy-staging.anthropic.com|registry.npmjs.org|jsr.io|npm.jsr.io|pypi.org|files.pythonhosted.org|index.crates.io|proxy.golang.org|host.docker.internal|10.*|172.16.*|172.17.*|172.18.*|172.19.*|172.20.*|172.21.*|172.22.*|172.23.*|172.24.*|172.25.*|172.26.*|172.27.*|172.28.*|172.29.*|172.30.*|172.31.*|192.168.*|100.64.0.0/10|*.svc.cluster.local|*.svc.cluster.local -Djdk.http.auth.tunneling.disabledSchemes= -Djdk.http.auth.proxying.disabledSchemes=
+PASS  com.schwab.common.json.JsonTest#roundTripsSimpleObject (8ms)
+PASS  com.schwab.common.json.JsonTest#escapesSpecialCharactersInStrings (1ms)
+PASS  com.schwab.common.json.JsonTest#parsesNestedArraysAndObjects (0ms)
+PASS  com.schwab.common.json.JsonTest#parsesUnicodeEscape (0ms)
+PASS  com.schwab.common.json.JsonTest#rejectsMalformedJson (8ms)
+PASS  com.schwab.urlshortener.UrlValidatorTest#acceptsWellFormedHttpsUrl (37ms)
+PASS  com.schwab.urlshortener.UrlValidatorTest#rejectsBlank (1ms)
+PASS  com.schwab.urlshortener.UrlValidatorTest#rejectsNonHttpScheme (1ms)
+PASS  com.schwab.urlshortener.UrlValidatorTest#rejectsMissingHost (1ms)
+PASS  com.schwab.urlshortener.UrlValidatorTest#rejectsLoopbackHost (1ms)
+PASS  com.schwab.urlshortener.UrlValidatorTest#rejectsLocalhostByName (1ms)
+PASS  com.schwab.urlshortener.UrlValidatorTest#rejectsTooLongUrl (2ms)
+PASS  com.schwab.urlshortener.AliasValidatorTest#acceptsSimpleAlphaNumericAlias (6ms)
+PASS  com.schwab.urlshortener.AliasValidatorTest#rejectsTooShortAlias (1ms)
+PASS  com.schwab.urlshortener.AliasValidatorTest#rejectsAliasesThatWouldBeShadowedByAReservedPathPrefix (1ms)
+PASS  com.schwab.urlshortener.AliasValidatorTest#nullAliasIsValid (0ms)
+PASS  com.schwab.urlshortener.AliasValidatorTest#rejectsIllegalCharacters (1ms)
+PASS  com.schwab.urlshortener.AliasValidatorTest#rejectsReservedWords (1ms)
+PASS  com.schwab.urlshortener.Base62EncoderTest#encodesZero (1ms)
+PASS  com.schwab.urlshortener.Base62EncoderTest#encodesSmallValues (0ms)
+PASS  com.schwab.urlshortener.Base62EncoderTest#isMonotonicAndCollisionFreeForASequence (12ms)
+PASS  com.schwab.urlshortener.Base62EncoderTest#rejectsNegativeValues (8ms)
+PASS  com.schwab.urlshortener.ExpiredUrlsFeatureTest#expiredAliasIsRejectedByValidator (2ms)
+PASS  com.schwab.urlshortener.ExpiredUrlsFeatureTest#expiredEndpointListsOnlyExpiredActiveRecords (1160ms)
+PASS  com.schwab.urlshortener.UrlShortenerIntegrationTest#fullLifecycle_createRedirectAnalyticsDelete (174ms)
+PASS  com.schwab.urlshortener.UrlShortenerIntegrationTest#duplicateCustomAliasReturns409 (63ms)
+PASS  com.schwab.urlshortener.UrlShortenerIntegrationTest#redirectToUnknownCodeReturns404 (11ms)
+PASS  com.schwab.urlshortener.UrlShortenerIntegrationTest#rateLimitTripsAfterCapacityExceeded (250ms)
+PASS  com.schwab.urlshortener.UrlShortenerIntegrationTest#invalidUrlReturns400 (12ms)
+PASS  com.schwab.urlshortener.RateLimiterTest#refillsOverTime (100ms)
+PASS  com.schwab.urlshortener.RateLimiterTest#allowsRequestsUpToCapacity (0ms)
+PASS  com.schwab.urlshortener.RateLimiterTest#rejectsRequestsBeyondCapacityWithNoRefill (0ms)
+PASS  com.schwab.urlshortener.RateLimiterTest#tracksDistinctClientsIndependently (0ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#createGeneratesAUniqueSequentialCode (1ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#createWithCustomAliasUsesThatExactCode (0ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#duplicateCustomAliasThrowsConflict (0ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#findReturnsEmptyForUnknownCode (0ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#softDeleteDeactivatesButKeepsTheRecordQueryable (1ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#softDeleteOfUnknownCodeReturnsFalse (1ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#recordClickIncrementsCounterAndRecentList (1ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#expiredRecordIsReportedAsExpired (1ms)
+PASS  com.schwab.urlshortener.InMemoryUrlStoreTest#writeAheadLogSurvivesStoreRestart (1ms)
+
+TESTS: total=42 passed=42 failed=0 durationMs=2375

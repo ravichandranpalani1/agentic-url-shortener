@@ -1,0 +1,9 @@
+# Build output (compiled classes, generated source-list files) -- see scripts/build.sh
+out/
+
+# Local data directory the service writes its write-ahead log into when DATA_DIR is not overridden
+/data/
+
+# OS / editor cruft
+.DS_Store
+*.swp
