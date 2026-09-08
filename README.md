@@ -1,8 +1,9 @@
-# Agentic URL Shortener
+# Agentic Software Engineering System -- URL Shortener
 
 A working URL-shortener prototype (core APIs, analytics, reliability features) built and
 governed end-to-end by a custom agentic SDLC orchestration engine, for the Schwab
-"Build an Agentic Software Engineering System" assessment.
+"Interview Assignment: Build an Agentic Software Engineering System- URL Shortener"
+assessment.
 
 This repo contains two independent Java programs:
 
