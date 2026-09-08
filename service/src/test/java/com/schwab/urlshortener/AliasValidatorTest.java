@@ -1,53 +1,59 @@
 package com.schwab.urlshortener;
 
-import com.schwab.testlib.Test;
 import com.schwab.urlshortener.model.ServiceExceptions.InvalidUrlException;
 import com.schwab.urlshortener.validation.AliasValidator;
+import org.junit.jupiter.api.Test;
 
-import static com.schwab.testlib.Assert.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class AliasValidatorTest {
+class AliasValidatorTest {
 
     @Test
-    public void nullAliasIsValid() {
+    void nullAliasIsValid() {
         AliasValidator.validate(null);
     }
 
     @Test
-    public void acceptsSimpleAlphaNumericAlias() {
+    void acceptsSimpleAlphaNumericAlias() {
         AliasValidator.validate("research-q3_2026");
     }
 
     @Test
-    public void rejectsTooShortAlias() {
+    void rejectsTooShortAlias() {
         assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("ab"), "alias shorter than 3 chars");
     }
 
     @Test
-    public void rejectsIllegalCharacters() {
+    void rejectsIllegalCharacters() {
         assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("has space"), "alias with a space");
         assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("slash/here"), "alias with a slash");
     }
 
     @Test
-    public void rejectsReservedWords() {
+    void rejectsReservedWordsExactly() {
         assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("api"), "reserved word 'api'");
         assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("healthz"), "reserved word 'healthz'");
+        assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("metrics"), "reserved word 'metrics'");
+        // "expired" becomes reserved only once the brownfield scenario adds the
+        // GET /api/v1/urls/expired endpoint -- see ExpiredUrlsFeatureTest, added by that scenario.
     }
 
     /**
-     * Regression test for a routing collision found via UrlShortenerIntegrationTest:
-     * com.sun.net.httpserver matches contexts by string prefix, so an alias like
-     * "healthzone" would be silently shadowed by the "/healthz" context and never reach the
-     * redirect handler. See docs/testing-and-limitations.md.
+     * Under Spring MVC's path matching, a literal mapping like "/api/v1/urls/expired" only ever
+     * collides with the "{code}" pattern on an *exact* path match -- unlike the earlier
+     * zero-dependency HTTP layer (com.sun.net.httpserver.HttpServer), which matched registered
+     * contexts by raw string prefix, so "healthzone" used to be silently shadowed by a "/healthz"
+     * context. That whole bug class does not exist under Spring's router, so these aliases are
+     * now legitimately reachable and must be *accepted*. See docs/testing-and-limitations.md.
      */
     @Test
-    public void rejectsAliasesThatWouldBeShadowedByAReservedPathPrefix() {
-        assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("healthzone"),
-                "alias starting with the reserved prefix 'healthz'");
-        assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("metrics-2026"),
-                "alias starting with the reserved prefix 'metrics'");
-        assertThrows(InvalidUrlException.class, () -> AliasValidator.validate("apidocs"),
-                "alias starting with the reserved prefix 'api'");
+    void acceptsAliasesThatMerelyStartWithAReservedWord() {
+        assertDoesNotThrow(() -> AliasValidator.validate("healthzone"),
+                "not an exact collision with the reserved 'healthz' -- Spring routes it correctly");
+        assertDoesNotThrow(() -> AliasValidator.validate("metrics-2026"),
+                "not an exact collision with the reserved 'metrics'");
+        assertDoesNotThrow(() -> AliasValidator.validate("apidocs"),
+                "not an exact collision with the reserved 'api'");
     }
 }

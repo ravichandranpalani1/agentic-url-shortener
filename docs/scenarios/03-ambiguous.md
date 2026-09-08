@@ -27,15 +27,16 @@ with two concrete interpretations put in front of the approver
 
 - **Rejected**: record analytics synchronously before responding -- guarantees no click is
   ever lost, at the cost of coupling redirect latency to the analytics write path. A real,
-  compilable interpretation (`scenario-assets/ambiguous/RedirectHandler.synchronous-rejected.java`),
+  compilable interpretation (`scenario-assets/ambiguous/RedirectController.synchronous-rejected.java`),
   not a strawman -- and exactly the kind of trade-off this gate exists to catch before it
-  ships, because it silently reverses `RedirectHandler`'s documented design decision that
+  ships, because it silently reverses `RedirectController`'s documented design decision that
   redirect latency must never depend on the analytics write (`docs/architecture.md`, §2.3).
 - **Approved**: defend the analytics executor submission against
   `RejectedExecutionException` so a saturated/shutting-down executor degrades to a logged
   drop instead of throwing on the request thread, while keeping analytics fully
-  asynchronous (`scenario-assets/ambiguous/RedirectHandler.retry-approved.java`) -- the one
-  actually applied to `service/src/main/java/.../RedirectHandler.java` by the
+  asynchronous (`scenario-assets/ambiguous/RedirectController.retry-approved.java`) -- the
+  one actually applied to
+  `service/src/main/java/com/schwab/urlshortener/web/RedirectController.java` by the
   `implementation` stage.
 
 The recorded rationale (`approvals/ambiguous.json`) is explicit about *why*: the approved
@@ -71,25 +72,29 @@ in the graph depends on `rollback-drill`, so its (expected) failure doesn't bloc
 independent stages, one that must succeed for the release to proceed and one that is
 allowed to fail by design.
 
-## 4. Real metrics from this run
+## 4. Metrics from this run
 
-```
-totalStages=9  completedStages=8  failedStages=1  skippedStages=0
-successRate=0.8889  totalRetries=0  totalRollbacks=1
-approvalsRequested=2  approvalsRejected=0  endToEndLatencyMillis=6812
-```
-(2 approvals: `clarify-requirement` and `implementation`. 1 rollback: `rollback-drill`.)
+Every run of `scripts/run-orchestrator.sh ambiguous` prints a real metrics block
+(`totalStages`, `completedStages`, `failedStages`, `successRate`, `totalRollbacks`,
+`approvalsRequested`, `endToEndLatencyMillis`, ...) and writes the same numbers to
+`runs/ambiguous/state.json` and the audit trail to `runs/ambiguous/audit.jsonl` -- inspect
+those files after running it locally for this run's actual numbers. On a fresh run you
+should see `totalStages=9`, `completedStages=8`, `failedStages=1` (the deliberate
+`rollback-drill` failure), `totalRollbacks=1`, and `approvalsRequested=2`
+(`clarify-requirement` and `implementation`).
 
 ## 5. Validation
 
-- Full test suite after this scenario's change: 57/57 passing, including the pre-existing
-  `UrlShortenerIntegrationTest#fullLifecycle_createRedirectAnalyticsDelete`, which exercises
-  the modified `RedirectHandler` end-to-end (create, redirect, click recorded, analytics
-  read back) and provides regression coverage for the change without a dedicated new test
-  file.
-- `release` decision: **GO**.
+- Full suite after this scenario's changes: run `scripts/test.sh all` and confirm all
+  green, including `UrlShortenerIntegrationTest#fullLifecycleCreateRedirectAnalyticsDelete`,
+  which exercises the modified `RedirectController` end-to-end (create, redirect, click
+  recorded, analytics read back) and provides regression coverage for the change without a
+  dedicated new test file.
+- `release` decision: **GO** (printed at the end of the run; a `NO-GO` would mean a test
+  failed or a guardrail tripped, and the run's exit code would be non-zero).
 - The rejected interpretation's file
-  (`scenario-assets/ambiguous/RedirectHandler.synchronous-rejected.java`) is kept in the
+  (`scenario-assets/ambiguous/RedirectController.synchronous-rejected.java`) is kept in the
   repo as a scenario asset only -- it was never applied to `service/`, and its javadoc
   explains exactly why it was rejected, so the decision is auditable without needing the
   audit log.
+</content>

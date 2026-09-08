@@ -58,13 +58,14 @@ public final class ScenarioDefinitions {
                 .dependsOn("design")
                 .param("mode", "verify-scaffold")
                 .param("expectedFiles", List.of(
-                        "service/src/main/java/com/schwab/urlshortener/UrlShortenerServer.java",
-                        "service/src/main/java/com/schwab/urlshortener/Bootstrap.java",
+                        "service/pom.xml",
+                        "service/src/main/java/com/schwab/urlshortener/UrlShortenerApplication.java",
+                        "service/src/main/java/com/schwab/urlshortener/config/AppConfig.java",
                         "service/src/main/java/com/schwab/urlshortener/store/InMemoryUrlStore.java",
                         "service/src/main/java/com/schwab/urlshortener/store/WriteAheadLog.java",
-                        "service/src/main/java/com/schwab/urlshortener/http/RedirectHandler.java",
-                        "service/src/main/java/com/schwab/urlshortener/http/UrlsCollectionHandler.java",
-                        "service/src/main/java/com/schwab/urlshortener/http/UrlItemHandler.java",
+                        "service/src/main/java/com/schwab/urlshortener/web/RedirectController.java",
+                        "service/src/main/java/com/schwab/urlshortener/web/UrlsController.java",
+                        "service/src/main/java/com/schwab/urlshortener/web/UrlItemController.java",
                         "service/src/main/java/com/schwab/urlshortener/rate/RateLimiter.java",
                         "service/src/main/java/com/schwab/urlshortener/util/Base62Encoder.java",
                         "service/src/main/java/com/schwab/urlshortener/validation/UrlValidator.java"))
@@ -115,8 +116,8 @@ public final class ScenarioDefinitions {
                 .build();
 
         List<Map<String, Object>> changes = List.of(
-                Map.of("targetFile", "service/src/main/java/com/schwab/urlshortener/http/UrlItemHandler.java",
-                        "sourceAssetPath", "scenario-assets/brownfield/UrlItemHandler.java"),
+                Map.of("targetFile", "service/src/main/java/com/schwab/urlshortener/web/UrlItemController.java",
+                        "sourceAssetPath", "scenario-assets/brownfield/UrlItemController.java"),
                 Map.of("targetFile", "service/src/main/java/com/schwab/urlshortener/validation/AliasValidator.java",
                         "sourceAssetPath", "scenario-assets/brownfield/AliasValidator.java"),
                 Map.of("targetFile", "service/src/test/java/com/schwab/urlshortener/ExpiredUrlsFeatureTest.java",
@@ -127,7 +128,7 @@ public final class ScenarioDefinitions {
                 .param("mode", "apply-change")
                 .param("changes", changes)
                 .param("targetFiles", List.of(
-                        "service/src/main/java/com/schwab/urlshortener/http/UrlItemHandler.java",
+                        "service/src/main/java/com/schwab/urlshortener/web/UrlItemController.java",
                         "service/src/main/java/com/schwab/urlshortener/validation/AliasValidator.java",
                         "service/src/test/java/com/schwab/urlshortener/ExpiredUrlsFeatureTest.java"))
                 .requiresApproval("Modifies request routing logic in an existing, tested handler; requires sign-off")
@@ -190,14 +191,14 @@ public final class ScenarioDefinitions {
                 .build();
 
         List<Map<String, Object>> realChange = List.of(
-                Map.of("targetFile", "service/src/main/java/com/schwab/urlshortener/http/RedirectHandler.java",
-                        "sourceAssetPath", "scenario-assets/ambiguous/RedirectHandler.retry-approved.java"));
+                Map.of("targetFile", "service/src/main/java/com/schwab/urlshortener/web/RedirectController.java",
+                        "sourceAssetPath", "scenario-assets/ambiguous/RedirectController.retry-approved.java"));
 
         Stage implementation = Stage.builder("implementation", "Apply clarified change", new ImplementationAgent())
                 .dependsOn("design")
                 .param("mode", "apply-change")
                 .param("changes", realChange)
-                .param("targetFiles", List.of("service/src/main/java/com/schwab/urlshortener/http/RedirectHandler.java"))
+                .param("targetFiles", List.of("service/src/main/java/com/schwab/urlshortener/web/RedirectController.java"))
                 .requiresApproval("Changes the redirect path's analytics-submission handling; requires sign-off")
                 .guardrail(new RestrictedPathGuardrail())
                 .guardrail(new SecretScanGuardrail())

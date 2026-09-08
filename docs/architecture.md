@@ -35,31 +35,38 @@ filesystem and process-execution access, not a compiled-in dependency.
 ### 2.1 Component map
 
 ```
-UrlShortenerServer (main)
-  └── Bootstrap.start(Config)
+UrlShortenerApplication (@SpringBootApplication main)
+  └── AppConfig (@Configuration -- Spring's wiring point, analogous to a hand-written Bootstrap)
         ├── WriteAheadLog            (data/wal.log -- durability)
         ├── InMemoryUrlStore          (implements UrlStore)
-        ├── ServiceMetrics            (in-process counters)
+        ├── ServiceMetrics            (@Component, in-process counters)
         ├── RateLimiter               (per-client token buckets)
-        └── com.sun.net.httpserver.HttpServer
-              ├── /api/v1/urls          -> UrlsCollectionHandler  (POST create, GET list)
-              ├── /api/v1/urls/{code}   -> UrlItemHandler          (GET info, GET .../analytics,
-              │                                                     DELETE, GET .../expired*)
-              ├── /healthz              -> HealthHandler
-              ├── /metrics              -> MetricsHandler
-              └── /{code}               -> RedirectHandler         (GET -> 302, async click log)
-              (RateLimitFilter wraps every context except /healthz and /metrics)
+        └── Spring MVC (embedded Tomcat)
+              ├── /api/v1/urls          -> UrlsController         (POST create, GET list)
+              ├── /api/v1/urls/{code}   -> UrlItemController       (GET info, GET .../analytics, DELETE)
+              ├── /api/v1/urls/expired  -> UrlItemController*      (GET -- added by the brownfield scenario)
+              ├── /healthz              -> HealthController
+              ├── /metrics              -> MetricsController
+              └── /{code}, /            -> RedirectController      (GET -> 302, async click log)
+              (ServiceGovernanceFilter wraps every request except /healthz and /metrics: rate
+               limiting + per-request reliability metrics, in one servlet Filter)
 ```
 `*` added by the brownfield scenario -- see `docs/scenarios/02-brownfield.md`.
 
-`Bootstrap.start()` is the single wiring point, used by both `UrlShortenerServer.main()`
-(reads config from the environment) and `UrlShortenerIntegrationTest` (starts a real
-server on an ephemeral port for end-to-end tests). There is no separate "test wiring" --
-tests exercise the exact object graph production uses.
+`AppConfig` is the single wiring point for the service's plain-Java domain objects (the
+store, the WAL, the rate limiter); Spring's `@SpringBootTest` starts the exact same object
+graph on a random port for `UrlShortenerIntegrationTest` and friends. There is no separate
+"test wiring" -- tests exercise the exact object graph production uses.
+
+This service moved from a hand-rolled, zero-dependency HTTP layer
+(`com.sun.net.httpserver.HttpServer`) to Spring Boot -- see
+`docs/testing-and-limitations.md` §4 for why the zero-dependency version existed at all
+(a sandboxed build environment with no Maven Central access) and what changed once that
+constraint no longer applied to the environment actually building this code.
 
 ### 2.2 Request flow: create
 
-`POST /api/v1/urls` (`UrlsCollectionHandler`) -> `UrlValidator.validate` (scheme/host/SSRF
+`POST /api/v1/urls` (`UrlsController`) -> `UrlValidator.validate` (scheme/host/SSRF
 checks) -> `AliasValidator.validate` (if a custom alias was supplied) ->
 `InMemoryUrlStore.create`, which either uses the caller's alias verbatim or generates one
 from an internal `AtomicLong` sequence via `Base62Encoder`, checking for collisions before
@@ -68,7 +75,7 @@ updated, so a crash between those two steps still leaves a replayable, consisten
 
 ### 2.3 Request flow: redirect
 
-`GET /{code}` (`RedirectHandler`) is intentionally the leanest path in the service: look up
+`GET /{code}` (`RedirectController`) is intentionally the leanest path in the service: look up
 the record, check `active`/`isExpired`, write the `Location` header and a bare 302 -- and
 only *after* the response has been sent does it submit a click-analytics write to a
 background executor. Analytics recording can never add latency to a redirect, and a
@@ -112,20 +119,27 @@ real deployment would need periodic snapshot+truncate. This is called out again 
 - **`/healthz` and `/metrics`**: liveness plus in-process counters (request count, error
   rate, rate-limited count, redirect count, average latency, stored-URL count).
 
-### 2.6 A routing bug this design surfaced (and how it's guarded against)
+### 2.6 A routing bug this design surfaced -- and how moving to Spring Boot changed it
 
-`com.sun.net.httpserver.HttpServer` matches contexts by **string prefix**, not by path
-segment: a context registered at `/healthz` also matches a request for
-`/healthz-anything`. This was caught for real by a failing integration test (see
-`docs/testing-and-limitations.md` for the full story) and is now guarded on two layers:
-`AliasValidator` rejects any custom alias that would fall under a reserved prefix
-(`api`, `healthz`, `metrics`, `favicon.ico`, and -- after the brownfield scenario --
-`expired`), and `HealthHandler`/`MetricsHandler` additionally refuse to serve a
-non-exact-path request rather than relying solely on the upstream guard. Anyone adding a
-new sub-resource route (as the brownfield scenario's `UrlItemHandler` change does for
-`/api/v1/urls/expired`) is expected to extend the same reserved-word list rather than
-register a new, more-specific `HttpServer` context -- see the javadoc on
-`UrlItemHandler.handleExpiredList` for the reasoning applied a second time.
+The original, zero-dependency version of this service used
+`com.sun.net.httpserver.HttpServer`, which matches registered contexts by **string
+prefix**, not by path segment: a context registered at `/healthz` also matched a request
+for `/healthz-anything`. That bug was caught for real by a failing integration test (see
+`docs/testing-and-limitations.md` for the full story) and was guarded against with a
+reserved-*prefix* check in `AliasValidator` plus defense-in-depth exact-path checks in the
+health/metrics handlers.
+
+Spring MVC's request mapping does not have that bug class: routes are matched by exact
+path-segment comparison (with literal mappings preferred over `{variable}` patterns on an
+exact match), so a code merely *starting with* a reserved word -- `healthzone`,
+`apidocs` -- is perfectly reachable and no longer needs to be rejected.
+`AliasValidator.RESERVED_EXACT` was narrowed from prefix-match to exact-match accordingly;
+`AliasValidatorTest#acceptsAliasesThatMerelyStartWithAReservedWord` is a direct regression
+test proving those aliases are now valid. The remaining, narrower risk -- a code *exactly*
+equal to a reserved literal segment (e.g. `expired`, once the brownfield scenario adds
+`GET /api/v1/urls/expired`) would be permanently shadowed and unreachable via GET -- is
+still real under Spring's routing too, so `AliasValidator` still reserves those exact
+words. See `UrlItemController`'s javadoc for the brownfield-specific case.
 
 ## 3. The orchestration engine
 
@@ -254,10 +268,9 @@ found precisely because that second run's re-execution pattern looked wrong.
 
 | Decision | Rationale |
 |---|---|
-| Zero third-party dependencies | The build/verification environment had no registry access; see `docs/testing-and-limitations.md`. |
-| `com.sun.net.httpserver` instead of a framework | JDK-bundled, no dependency, sufficient for this scope. |
-| Hand-rolled JSON (`common/`) | No Jackson/Gson available; kept to the subset the project actually needs. |
-| Hand-rolled test runner (`testlib/`) | No JUnit available; ~150 lines, reflection-based, real pass/fail + JSON summary for `TestingAgent` to parse. |
-| WAL + replay instead of a database | No JDBC driver/H2 available, and it demonstrates a real, testable durability mechanism. |
+| `service/` on Spring Boot; `orchestrator/`+`common/`+`testlib/` zero-dependency | The service is a normal Spring Boot application (Spring MVC, Jackson, JUnit 5/Surefire via Maven) built against the requested Java/Spring Boot stack. The orchestration engine and its shared libraries stay dependency-free plain JDK, both because they never needed a framework and because this project was developed in a sandbox with no Maven Central access -- see `docs/testing-and-limitations.md` for the full history of that constraint and how the two build tools (`javac` and `mvn`) now coexist in `scripts/build.sh`/`scripts/test.sh`. |
+| Hand-rolled JSON (`common/`) | Used only by the orchestrator (audit log, `state.json`, WAL-format-adjacent data) where no framework is present; the service uses Jackson (bundled with `spring-boot-starter-web`) instead. |
+| Hand-rolled test runner (`testlib/`) | Used only for `orchestrator/`'s own unit tests, which have no Spring/JUnit dependency to draw on; `service/` uses ordinary JUnit 5 via Maven Surefire. |
+| WAL + replay instead of a database | Demonstrates a real, testable durability mechanism without adding a database dependency to a prototype; still true under Spring Boot. |
 | Orchestrator agents operate on the real repo, not a sandbox copy | Produces genuine evidence (real diffs, real test runs) rather than a simulation; the trade-off is that running a scenario twice is only safe because `ImplementationAgent` snapshots before overwriting and the graph's re-planning makes an unchanged rerun a no-op. |
 | Approvals are file-backed for the shipped scenarios | Makes the three required runs reproducible without a human at the keyboard, while keeping every decision auditable with a named approver and rationale. |

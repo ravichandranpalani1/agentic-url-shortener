@@ -1,5 +1,7 @@
 package com.schwab.urlshortener.metrics;
 
+import org.springframework.stereotype.Component;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -7,8 +9,10 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * In-process reliability counters exposed at /metrics. This is intentionally
  * simple (no histograms/percentiles) -- a real deployment would ship these
- * to a metrics backend (Prometheus/CloudWatch); see docs/architecture.md.
+ * to a metrics backend, or use Spring Boot Actuator + Micrometer directly;
+ * see docs/architecture.md.
  */
+@Component
 public final class ServiceMetrics {
 
     private final long startTimeMillis = System.currentTimeMillis();

@@ -1,12 +1,12 @@
 package com.schwab.urlshortener;
 
-import com.schwab.testlib.Test;
 import com.schwab.urlshortener.model.ClickEvent;
 import com.schwab.urlshortener.model.ServiceExceptions.AliasConflictException;
 import com.schwab.urlshortener.model.UrlRecord;
 import com.schwab.urlshortener.store.InMemoryUrlStore;
 import com.schwab.urlshortener.store.UrlStore;
 import com.schwab.urlshortener.store.WriteAheadLog;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,12 +14,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-import static com.schwab.testlib.Assert.assertEquals;
-import static com.schwab.testlib.Assert.assertFalse;
-import static com.schwab.testlib.Assert.assertThrows;
-import static com.schwab.testlib.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class InMemoryUrlStoreTest {
+class InMemoryUrlStoreTest {
 
     private UrlStore freshStore() throws IOException {
         Path dir = Files.createTempDirectory("uss-test-");
@@ -27,7 +27,7 @@ public class InMemoryUrlStoreTest {
     }
 
     @Test
-    public void createGeneratesAUniqueSequentialCode() throws IOException {
+    void createGeneratesAUniqueSequentialCode() throws IOException {
         UrlStore store = freshStore();
         UrlRecord a = store.create("https://a.example.com", null, null);
         UrlRecord b = store.create("https://b.example.com", null, null);
@@ -36,7 +36,7 @@ public class InMemoryUrlStoreTest {
     }
 
     @Test
-    public void createWithCustomAliasUsesThatExactCode() throws IOException {
+    void createWithCustomAliasUsesThatExactCode() throws IOException {
         UrlStore store = freshStore();
         UrlRecord r = store.create("https://schwab.com/research", "research", null);
         assertEquals("research", r.code(), "custom alias should be used verbatim as the code");
@@ -44,7 +44,7 @@ public class InMemoryUrlStoreTest {
     }
 
     @Test
-    public void duplicateCustomAliasThrowsConflict() throws IOException {
+    void duplicateCustomAliasThrowsConflict() throws IOException {
         UrlStore store = freshStore();
         store.create("https://a.example.com", "dup-alias", null);
         assertThrows(AliasConflictException.class,
@@ -53,13 +53,13 @@ public class InMemoryUrlStoreTest {
     }
 
     @Test
-    public void findReturnsEmptyForUnknownCode() throws IOException {
+    void findReturnsEmptyForUnknownCode() throws IOException {
         UrlStore store = freshStore();
         assertEquals(Optional.empty(), store.find("nope"), "unknown code should not be found");
     }
 
     @Test
-    public void softDeleteDeactivatesButKeepsTheRecordQueryable() throws IOException {
+    void softDeleteDeactivatesButKeepsTheRecordQueryable() throws IOException {
         UrlStore store = freshStore();
         UrlRecord r = store.create("https://a.example.com", "todelete", null);
         assertTrue(store.softDelete("todelete"), "delete of an existing code should succeed");
@@ -69,15 +69,15 @@ public class InMemoryUrlStoreTest {
     }
 
     @Test
-    public void softDeleteOfUnknownCodeReturnsFalse() throws IOException {
+    void softDeleteOfUnknownCodeReturnsFalse() throws IOException {
         UrlStore store = freshStore();
         assertFalse(store.softDelete("does-not-exist"), "deleting an unknown code should return false, not throw");
     }
 
     @Test
-    public void recordClickIncrementsCounterAndRecentList() throws IOException {
+    void recordClickIncrementsCounterAndRecentList() throws IOException {
         UrlStore store = freshStore();
-        UrlRecord r = store.create("https://a.example.com", "clicky", null);
+        store.create("https://a.example.com", "clicky", null);
         store.recordClick(new ClickEvent("clicky", System.currentTimeMillis(), "https://ref", "ua", "hash1"));
         store.recordClick(new ClickEvent("clicky", System.currentTimeMillis(), null, "ua", "hash2"));
 
@@ -89,7 +89,7 @@ public class InMemoryUrlStoreTest {
     }
 
     @Test
-    public void expiredRecordIsReportedAsExpired() throws IOException {
+    void expiredRecordIsReportedAsExpired() throws IOException {
         UrlStore store = freshStore();
         UrlRecord r = store.create("https://a.example.com", "expiring", 1L); // 1 second TTL
         assertFalse(r.isExpired(System.currentTimeMillis()), "should not be expired immediately");
@@ -97,7 +97,7 @@ public class InMemoryUrlStoreTest {
     }
 
     @Test
-    public void writeAheadLogSurvivesStoreRestart() throws IOException {
+    void writeAheadLogSurvivesStoreRestart() throws IOException {
         Path dir = Files.createTempDirectory("uss-test-wal-");
         Path walPath = dir.resolve("wal.log");
 

@@ -2,8 +2,9 @@
 
 **Run it yourself:** `scripts/run-orchestrator.sh brownfield` (uses `approvals/brownfield.json`).
 
-This run genuinely modifies the live `service/` source tree -- it's how the
-`GET /api/v1/urls/expired` endpoint that exists in this repo today was actually added.
+This run genuinely modifies the live `service/` source tree -- running it is how the
+`GET /api/v1/urls/expired` endpoint gets added to this repo's `service/` for the first time.
+`service/` ships without it; this scenario is what adds it, for real, the first time it runs.
 
 ## Requirement
 
@@ -18,48 +19,52 @@ Well-defined, but purely brownfield -- it only makes sense in terms of the exist
 `RequirementsAgent` matched `expire`/`expiration` in its domain vocabulary.
 `DesignAgent` then walked the actual `service/src/main/java` tree and reported every file
 whose content or filename matched -- correctly surfacing `UrlRecord.java` (owns
-`isExpired`), `UrlItemHandler.java` (owns the `/api/v1/urls/{code}` resource family this
+`isExpired`), `UrlItemController.java` (owns the `/api/v1/urls/{code}` resource family this
 belongs under) and `InMemoryUrlStore.java`/`UrlStore.java` (own `recent()`, the method the
 implementation ends up reusing) among the impacted files
-(`runs/brownfield/artifacts/design-impact-note.md`). This is what let the implementation
-land as a **read-only extension of an existing handler using an already-public method**
-(`UrlStore.recent()`) rather than a new store-layer API.
+(`runs/brownfield/artifacts/design-impact-note.md`, generated fresh each time you run this).
+This is what let the implementation land as a **read-only extension of an existing controller
+using an already-public method** (`UrlStore.recent()`) rather than a new store-layer API.
 
 ## 2. The change actually applied
 
 Three files, copied from pre-drafted patches in `scenario-assets/brownfield/` onto their
 real targets by `ImplementationAgent`:
 
-- `service/src/main/java/com/schwab/urlshortener/http/UrlItemHandler.java` -- adds a
-  `GET /api/v1/urls/expired` branch, handled *inside* the existing handler rather than as a
-  new `HttpServer` context, specifically to avoid recreating the routing-collision bug
-  described below and in `docs/testing-and-limitations.md`.
+- `service/src/main/java/com/schwab/urlshortener/web/UrlItemController.java` -- adds a
+  `@GetMapping("/api/v1/urls/expired")` method alongside the existing `{code}` mappings in
+  the same controller.
 - `service/src/main/java/com/schwab/urlshortener/validation/AliasValidator.java` -- adds
-  `expired` to the reserved-alias list, for the same reason.
+  `expired` to the reserved-word list, so a real short code can never be created that would
+  be permanently shadowed by this more specific mapping.
 - `service/src/test/java/com/schwab/urlshortener/ExpiredUrlsFeatureTest.java` -- a new,
   permanent test covering both the endpoint's behavior (only expired+active records listed,
   a permanent record never appears) and the alias-reservation.
 
-Every one of these was a real file write; `ImplementationAgent` also snapshotted each
-target's pre-existing content to `runs/brownfield/backups/` before overwriting, the same
-mechanism the ambiguous scenario's rollback demo relies on.
+Every one of these is a real file write; `ImplementationAgent` also snapshots each target's
+pre-existing content to `runs/brownfield/backups/` before overwriting, the same mechanism
+the ambiguous scenario's rollback demo relies on.
 
-### Why this bug class mattered enough to design around twice
+### Why the reserved-word list still matters under Spring's routing
 
-`com.sun.net.httpserver.HttpServer` matches contexts by string prefix. Registering
-`/api/v1/urls/expired` as its own context would have silently shadowed any real short code
-literally named `expired`, reachable via `GET /api/v1/urls/{code}`. This exact bug class
-was already found and fixed once in this repo (`docs/testing-and-limitations.md`, bug #1);
-this scenario's design deliberately routes around it a second time rather than
-reintroducing it, and `AliasValidator`'s reserved-word list is extended rather than
-duplicated.
+An earlier, zero-dependency version of this service used
+`com.sun.net.httpserver.HttpServer`, which matches contexts by raw string prefix -- so
+registering `/api/v1/urls/expired` as its own context would have silently shadowed *any*
+real short code merely starting with `expired`. That bug class doesn't exist under Spring
+MVC's exact-path-segment routing (see `docs/architecture.md` §2.6 and
+`docs/testing-and-limitations.md` bug #1). A narrower version of the same risk remains,
+though: `/api/v1/urls/expired` and `/api/v1/urls/{code}` are still two mappings on the same
+path shape, and Spring always prefers the exact literal match, so a short code *exactly*
+equal to `expired` would be permanently unreachable via `GET`. `AliasValidator` reserving
+`expired` (exactly, not as a prefix) is what prevents that -- see
+`AliasValidator`'s javadoc and `UrlItemController`'s javadoc for the full reasoning.
 
 ## 3. Orchestration walkthrough -- the fallback path, for real
 
 The `notify` stage is configured with `alwaysFail=true` for this scenario, simulating a
 downstream release-notification endpoint that is completely unavailable -- a fixture that
 guarantees its retries are genuinely exhausted rather than hoping a real flaky dependency
-cooperates on demand:
+cooperates on demand. Running the scenario produces an audit trail like:
 
 ```
 [STARTED] notify
@@ -74,28 +79,29 @@ cooperates on demand:
 `runs/brownfield/artifacts/manual-follow-up-queue.md` -- so a human/on-call process has
 something concrete to act on, and the stage still reports `COMPLETED` (via the fallback),
 so `release` is not blocked by an outage in a non-critical downstream integration.
-`implementation` also gated on human approval here (`approvals/brownfield.json`), since it
+`implementation` also gates on human approval here (`approvals/brownfield.json`), since it
 touches existing, tested routing logic.
 
-## 4. Real metrics from this run
+## 4. Metrics from this run
 
-```
-totalStages=7  completedStages=7  successRate=1.0
-totalRetries=1  totalRollbacks=0  approvalsRequested=1  approvalsRejected=0
-mttrMillis=103.0  endToEndLatencyMillis=7547
-```
+Every run of `scripts/run-orchestrator.sh brownfield` prints a real metrics block
+(`totalStages`, `completedStages`, `successRate`, `totalRetries`, `approvalsRequested`,
+`mttrMillis`, `endToEndLatencyMillis`, ...) and writes the same numbers to
+`runs/brownfield/state.json` and the audit trail to `runs/brownfield/audit.jsonl` -- inspect
+those files after running it locally for this run's actual numbers. On a fresh run you
+should see `totalStages=7`, `completedStages=7`, `successRate=1.0`, `totalRetries=1` (the
+`notify` stage's two exhausted attempts before its fallback completes it), and
+`approvalsRequested=1` (the `implementation` stage's gate).
 
 ## 5. Validation
 
-- New test `ExpiredUrlsFeatureTest` passes as part of the real `testing` stage run.
-- Full suite after this scenario's changes: 57/57 passing
-  (`scripts/test.sh all`, up from 55 before the brownfield feature existed).
-- `release` decision: **GO**.
-- Manually verified end-to-end against a real running instance (`DATA_DIR=/tmp/verify-data
-  PORT=8099 java -cp out/classes com.schwab.urlshortener.UrlShortenerServer`):
-  `curl localhost:8099/api/v1/urls/expired` returns `{"count":0,"items":[]}` on an empty store;
-  creating a URL with `ttlSeconds:1` and waiting 2s, the same call returns
-  `{"count":1,"items":[{"code":"1","longUrl":"...","expiresAt":...}]}`; and
-  `POST /api/v1/urls {"customAlias":"expired-drop"}` is rejected with HTTP `400` and body
-  `{"error":"INVALID_REQUEST","message":"customAlias 'expired-drop' would be shadowed by the
-  reserved '/expired' path"}`.
+- New test `ExpiredUrlsFeatureTest` runs as part of this scenario's real `testing` stage.
+- Full suite after this scenario's changes: run `scripts/test.sh all` and confirm all green.
+- `release` decision: **GO** (printed at the end of the run; a `NO-GO` would mean a test
+  failed or a guardrail tripped, and the run's exit code would be non-zero -- see
+  `scripts/run-orchestrator.sh`).
+- To verify the endpoint by hand afterward: start the service
+  (`DATA_DIR=./data java -jar service/target/urlshortener-service.jar`), then
+  `curl localhost:8080/api/v1/urls/expired` should return `{"count":0,"items":[]}` on an
+  empty store, and `POST /api/v1/urls` with `{"customAlias":"expired"}` should be rejected
+  with `400 INVALID_REQUEST`.

@@ -38,10 +38,10 @@ one stage" wasn't the design chosen.
 
 ## 3. Orchestration walkthrough (real run, `runs/greenfield/audit.jsonl`)
 
-- **`design`**: scanned `service/src/main/java` for real and found the 8 keywords present
-  in 18 of the service's files (`runs/greenfield/artifacts/design-impact-note.md`) --
-  correctly identifying that the already-built service *is* the surface this requirement
-  touches.
+- **`design`**: scanned `service/src/main/java` for real and reported every file where the
+  8 matched keywords appear (`runs/greenfield/artifacts/design-impact-note.md`, generated
+  fresh each time you run this) -- correctly identifying that the already-built service *is*
+  the surface this requirement touches.
 - **`implementation`** (mode `verify-scaffold`, `maxRetries=3`): configured with
   `simulateTransientFailureUntilAttempt=2` to deterministically exercise the bounded-retry
   path against a documented failure class (a flaky dependency-resolution step) rather than
@@ -63,32 +63,42 @@ one stage" wasn't the design chosen.
   and the decision lineage for guardrail violations or rejected approvals, found none,
   decision **GO**.
 
-## 4. Real metrics from this run (`runs/greenfield` after a fresh run)
+## 4. Metrics from this run
 
-```
-totalStages=7  completedStages=7  successRate=1.0
-totalRetries=1  totalRollbacks=0  approvalsRequested=1  approvalsRejected=0
-mttrMillis=103.0  endToEndLatencyMillis=6987
-```
+Every run of `scripts/run-orchestrator.sh greenfield` prints a real metrics block
+(`totalStages`, `completedStages`, `successRate`, `totalRetries`, `totalRollbacks`,
+`approvalsRequested`, `mttrMillis`, `endToEndLatencyMillis`, ...) and writes the same
+numbers to `runs/greenfield/state.json` and the audit trail to `runs/greenfield/audit.jsonl`
+-- inspect those files after running it locally for this run's actual numbers. On a fresh
+run you should see `totalStages=7`, `completedStages=7`, `successRate=1.0`,
+`totalRetries=1` (the `implementation` stage's simulated transient failure recovering on
+attempt 3), `totalRollbacks=0`, and `approvalsRequested=1` (the `implementation` stage's
+gate).
 
 ## 5. Re-planning, demonstrated on this exact scenario
 
 Running `scripts/run-orchestrator.sh greenfield --auto` a second time immediately
-afterward, with nothing changed, reused every stage instead of re-executing it:
+afterward, with nothing changed, reuses every stage instead of re-executing it:
 
 ```
 FINAL STAGE STATUSES: design=REUSED docs=REUSED implementation=REUSED notify=REUSED
                        release=REUSED requirements=REUSED testing=REUSED
-totalRetries=0  reusedStages=7  successRate=1.0  endToEndLatencyMillis=70
+totalRetries=0  reusedStages=7  successRate=1.0
 ```
-(6987ms down to 70ms.) This is also exactly the run that surfaced the numeric-type-fidelity
-bug described in `docs/testing-and-limitations.md` -- the second run's statuses looked
-wrong (`testing` and `release` re-executed for no visible reason) before that fix, and
-look right now.
+End-to-end latency drops sharply (content-hash re-planning short-circuits every stage to a
+cache hit) -- compare `endToEndLatencyMillis` between the first and second run's
+`runs/greenfield/state.json` to see it directly. This is also exactly the kind of run that
+surfaced the numeric-type-fidelity bug described in `docs/testing-and-limitations.md` --
+before that fix, the second run's statuses could look wrong (`testing` and `release`
+re-executing for no visible reason); they report correctly now.
 
 ## 6. Validation
 
-- 10/10 expected scaffold files verified present.
-- Full real test suite green (`runs/greenfield/artifacts/test-summary-service.json`).
+- Every file listed in this scenario's `expectedFiles` (see `ScenarioDefinitions`) verified
+  present after the run.
+- Full real test suite green: run `scripts/test.sh service` (or `scripts/test.sh all`) and
+  confirm all green; the orchestrator's own `testing` stage shells out to the same command
+  and records its JSON summary at
+  `runs/greenfield/artifacts/test-summary-service.json`.
 - No guardrail violations, no rejected approvals, release decision GO.
 - Re-run reproducibility validated directly (section 5).

@@ -1,6 +1,7 @@
 package com.schwab.urlshortener.store;
 
-import com.schwab.common.json.Json;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,8 +19,17 @@ import java.util.Map;
  * can rebuild its state by replaying the file on the next startup. This is
  * the store's reliability/durability mechanism in place of an external
  * database (see docs/architecture.md).
+ *
+ * <p>Uses Jackson (bundled with spring-boot-starter-web) rather than the
+ * hand-rolled JSON library the zero-dependency version of this service used
+ * -- see docs/testing-and-limitations.md for that earlier trade-off and why
+ * moving to Spring Boot removed the need for it.
  */
 public final class WriteAheadLog {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final TypeReference<Map<String, Object>> EVENT_TYPE = new TypeReference<>() {
+    };
 
     private final Path logFile;
 
@@ -38,8 +48,8 @@ public final class WriteAheadLog {
     }
 
     public synchronized void append(Map<String, Object> event) {
-        String line = Json.write(event) + "\n";
         try {
+            String line = MAPPER.writeValueAsString(event) + "\n";
             Files.writeString(logFile, line, StandardCharsets.UTF_8,
                     StandardOpenOption.APPEND, StandardOpenOption.CREATE);
         } catch (IOException e) {
@@ -56,7 +66,7 @@ public final class WriteAheadLog {
                 if (line.isBlank()) {
                     continue;
                 }
-                events.add(Json.parseObject(line));
+                events.add(MAPPER.readValue(line, EVENT_TYPE));
             }
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to replay write-ahead log", e);

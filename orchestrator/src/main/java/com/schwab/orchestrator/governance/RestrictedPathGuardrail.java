@@ -17,7 +17,8 @@ import java.util.Set;
 public final class RestrictedPathGuardrail implements PolicyGuardrail {
 
     private static final Set<String> RESTRICTED_PREFIXES = Set.of(
-            "orchestrator/", ".git/", "service/src/main/java/com/schwab/urlshortener/UrlShortenerServer.java");
+            "orchestrator/", ".git/", "service/src/main/java/com/schwab/urlshortener/UrlShortenerApplication.java",
+            "service/pom.xml");
 
     @Override
     public String name() {

@@ -4,37 +4,40 @@ A working URL-shortener prototype (core APIs, analytics, reliability features) b
 governed end-to-end by a custom agentic SDLC orchestration engine, for the Schwab
 "Build an Agentic Software Engineering System" assessment.
 
-This repo contains two independent Java programs, both built with **zero third-party
-dependencies** (see [`docs/testing-and-limitations.md`](docs/testing-and-limitations.md)
-for why):
+This repo contains two independent Java programs:
 
-- **`service/`** -- the URL shortener itself: create/redirect/analytics/delete APIs, rate
-  limiting, an in-process cache-free write-ahead log for crash recovery, and a
+- **`service/`** -- the URL shortener itself, on **Spring Boot**: create/redirect/analytics/
+  delete APIs, rate limiting, an in-process write-ahead log for crash recovery, and a
   health/metrics endpoint.
 - **`orchestrator/`** -- the agentic orchestration layer: a dependency-graph engine with
   parallel/sequential execution, human approval gates, bounded retries, fallback,
   rollback, policy guardrails, audit logging, reliability metrics, and dynamic
-  re-planning. It runs real agents against the real `service/` codebase.
+  re-planning. It runs real agents against the real `service/` codebase. It, along with
+  `common/` (JSON) and `testlib/` (its test runner), stays **zero-dependency plain Java** --
+  see [`docs/testing-and-limitations.md`](docs/testing-and-limitations.md) for why that
+  split exists and the sandboxed-build-environment history behind it.
 
-Everything in this repo was actually run, not just described: see `runs/greenfield/`,
-`runs/brownfield/` and `runs/ambiguous/` for the real audit logs, metrics and generated
-artifacts from the three required scenario runs, and
-[`docs/testing-and-limitations.md`](docs/testing-and-limitations.md) for two real bugs
-that running this system for real surfaced and fixed.
+Everything in this repo is meant to be actually run, not just described: `runs/` fills up
+with real audit logs, metrics and generated artifacts the moment you run a scenario (see
+Quick start below), and [`docs/testing-and-limitations.md`](docs/testing-and-limitations.md)
+covers two real bugs that running this system for real surfaced and fixed.
 
 ## Quick start
 
-Requires only a JDK (21+) -- no Maven/Gradle, no internet access, no other tooling.
+Requires a JDK (21+) and **Apache Maven** (for `service/`'s Spring Boot build -- `mvn -v` to
+check; install from [maven.apache.org](https://maven.apache.org/download.cgi) or your OS
+package manager if missing). `orchestrator/`, `common/` and `testlib/` need only the JDK.
 
 ```bash
-# Build everything (common + testlib + service + orchestrator)
+# Build everything (javac for common+testlib+orchestrator, Maven for service/)
 scripts/build.sh
 
-# Run the full test suite (57 tests across all modules)
+# Run the full test suite (orchestrator's hand-rolled runner + service's JUnit 5/Surefire)
 scripts/test.sh all
 
 # Start the URL shortener service on :8080
-DATA_DIR=./data java -cp out/classes com.schwab.urlshortener.UrlShortenerServer
+DATA_DIR=./data java -jar service/target/urlshortener-service.jar
+# (or, for a dev loop: mvn -f service/pom.xml spring-boot:run)
 
 # In another shell:
 curl -s -X POST localhost:8080/api/v1/urls -H 'Content-Type: application/json' \
@@ -51,16 +54,21 @@ approvals from `approvals/<scenario>.json` automatically. Pass `--auto` instead 
 auto-approve everything (clearly flagged as simulated in the audit log; for smoke-testing
 only), or omit both to be prompted interactively on the console.
 
+**Run the scenarios in order** (`greenfield`, then `brownfield`, then `ambiguous`) on a
+fresh clone: brownfield and ambiguous each apply a real, permanent patch to `service/`
+(adding `GET /api/v1/urls/expired`, then hardening the redirect handler's analytics
+submission) -- see their scenario docs for exactly what changes and why.
+
 ## Repository layout
 
 ```
-common/          Dependency-free JSON reader/writer shared by both programs
-testlib/         ~150-line hand-rolled test framework (@Test annotation + reflection runner)
-service/         The URL shortener (see docs/architecture.md for the component breakdown)
-orchestrator/    The agentic SDLC orchestration engine + its 6 agents + the 3 scenario graphs
+common/          Dependency-free JSON reader/writer, used by orchestrator/ only
+testlib/         ~150-line hand-rolled test framework (@Test annotation + reflection runner), for orchestrator/
+service/         The URL shortener -- Spring Boot / Maven (see docs/architecture.md)
+orchestrator/    The agentic SDLC orchestration engine + its agents + the 3 scenario graphs
 scenario-assets/ Pre-drafted "patches" the orchestrator's ImplementationAgent applies for real
 approvals/       Pre-recorded human approval decisions consumed by each scenario run
-runs/            Real audit logs, metrics, and generated artifacts from actual scenario runs
+runs/            Real audit logs, metrics, and generated artifacts -- populated by running a scenario
 docs/            Architecture, the 3 scenario write-ups, testing/limitations, engineering summary
 scripts/         build.sh, test.sh, run-orchestrator.sh -- the whole build/run surface
 ```
