@@ -1,0 +1,10 @@
+# Normalized Requirement
+
+**Raw input:**
+
+> Add a way to list short URLs that are past their expiration but have not been cleaned up yet, so an operator can find them without scanning every record by hand.
+
+**Matched domain areas:** expiration
+
+**Ambiguous:** false
+

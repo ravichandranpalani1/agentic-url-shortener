@@ -1,0 +1,56 @@
+Running tests: service (Spring Boot, via Maven / JUnit 5 / Surefire)...
+16:22:05.418 [main] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.schwab.urlshortener.RateLimitIntegrationTest]: RateLimitIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+16:22:05.552 [main] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.schwab.urlshortener.UrlShortenerApplication for test class com.schwab.urlshortener.RateLimitIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-09-08T16:22:06.228-05:00  INFO 6000 --- [agentic-url-shortener] [           main] c.s.u.RateLimitIntegrationTest           : Starting RateLimitIntegrationTest using Java 21.0.12.1 with PID 6000 (started by admin in C:\Users\admin\Downloads\agentic-url-shortener\service)
+2026-09-08T16:22:06.230-05:00  INFO 6000 --- [agentic-url-shortener] [           main] c.s.u.RateLimitIntegrationTest           : No active profile set, falling back to 1 default profile: "default"
+2026-09-08T16:22:07.240-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 0 (http)
+2026-09-08T16:22:07.259-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-09-08T16:22:07.260-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+2026-09-08T16:22:07.316-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-09-08T16:22:07.316-05:00  INFO 6000 --- [agentic-url-shortener] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 1058 ms
+2026-09-08T16:22:07.742-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 58461 (http) with context path '/'
+2026-09-08T16:22:07.752-05:00  INFO 6000 --- [agentic-url-shortener] [           main] c.s.u.RateLimitIntegrationTest           : Started RateLimitIntegrationTest in 1.873 seconds (process running for 3.646)
+WARNING: A Java agent has been loaded dynamically (C:\Users\admin\.m2\repository\net\bytebuddy\byte-buddy-agent\1.14.19\byte-buddy-agent-1.14.19.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+2026-09-08T16:22:08.698-05:00  INFO 6000 --- [agentic-url-shortener] [o-auto-1-exec-1] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-08T16:22:08.699-05:00  INFO 6000 --- [agentic-url-shortener] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-09-08T16:22:08.700-05:00  INFO 6000 --- [agentic-url-shortener] [o-auto-1-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+2026-09-08T16:22:08.827-05:00  INFO 6000 --- [agentic-url-shortener] [           main] t.c.s.AnnotationConfigContextLoaderUtils : Could not detect default configuration classes for test class [com.schwab.urlshortener.UrlShortenerIntegrationTest]: UrlShortenerIntegrationTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2026-09-08T16:22:08.832-05:00  INFO 6000 --- [agentic-url-shortener] [           main] .b.t.c.SpringBootTestContextBootstrapper : Found @SpringBootConfiguration com.schwab.urlshortener.UrlShortenerApplication for test class com.schwab.urlshortener.UrlShortenerIntegrationTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.4)
+
+2026-09-08T16:22:08.914-05:00  INFO 6000 --- [agentic-url-shortener] [           main] c.s.u.UrlShortenerIntegrationTest        : Starting UrlShortenerIntegrationTest using Java 21.0.12.1 with PID 6000 (started by admin in C:\Users\admin\Downloads\agentic-url-shortener\service)
+2026-09-08T16:22:08.914-05:00  INFO 6000 --- [agentic-url-shortener] [           main] c.s.u.UrlShortenerIntegrationTest        : No active profile set, falling back to 1 default profile: "default"
+2026-09-08T16:22:09.193-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 0 (http)
+2026-09-08T16:22:09.195-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-09-08T16:22:09.195-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.30]
+2026-09-08T16:22:09.232-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.a.c.c.C.[Tomcat-1].[localhost].[/]     : Initializing Spring embedded WebApplicationContext
+2026-09-08T16:22:09.232-05:00  INFO 6000 --- [agentic-url-shortener] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 314 ms
+2026-09-08T16:22:09.374-05:00  INFO 6000 --- [agentic-url-shortener] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat started on port 58463 (http) with context path '/'
+2026-09-08T16:22:09.378-05:00  INFO 6000 --- [agentic-url-shortener] [           main] c.s.u.UrlShortenerIntegrationTest        : Started UrlShortenerIntegrationTest in 0.537 seconds (process running for 5.272)
+2026-09-08T16:22:09.394-05:00  INFO 6000 --- [agentic-url-shortener] [o-auto-2-exec-1] o.a.c.c.C.[Tomcat-1].[localhost].[/]     : Initializing Spring DispatcherServlet 'dispatcherServlet'
+2026-09-08T16:22:09.394-05:00  INFO 6000 --- [agentic-url-shortener] [o-auto-2-exec-1] o.s.web.servlet.DispatcherServlet        : Initializing Servlet 'dispatcherServlet'
+2026-09-08T16:22:09.395-05:00  INFO 6000 --- [agentic-url-shortener] [o-auto-2-exec-1] o.s.web.servlet.DispatcherServlet        : Completed initialization in 1 ms
+
+TESTS: total=36 passed=36 failed=0 durationMs=12299

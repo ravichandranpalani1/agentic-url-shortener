@@ -20,20 +20,15 @@ public final class AliasValidator {
     // docs/testing-and-limitations.md for that bug's original discovery
     // (UrlShortenerIntegrationTest#rateLimitTripsAfterCapacityExceeded).
     //
-    // Spring MVC's request mapping does not have that bug class: a literal "/api/v1/urls/expired"
-    // mapping and the "/api/v1/urls/{code}" pattern are matched by exact path-segment comparison,
-    // so "expired-links" is a perfectly reachable code and does NOT collide with the literal
-    // "/api/v1/urls/expired" mapping the way it would have under the old HTTP layer. Only an
+    // Spring MVC's request mapping does not have that bug class: any future literal mapping
+    // (e.g. "/api/v1/urls/expired") and the "/api/v1/urls/{code}" pattern are matched by exact
+    // path-segment comparison, so a code merely *starting with* a reserved word is perfectly
+    // reachable and does NOT collide the way it would have under the old HTTP layer. Only an
     // *exact* match with a reserved literal segment is still a real collision (a code literally
     // equal to a reserved word would always be shadowed by the more specific literal mapping and
     // become unreachable via GET). The set below was narrowed from prefix-match to exact-match
-    // when the service moved to Spring Boot.
-    //
-    // "expired" was added by the orchestrator's brownfield scenario as part of the
-    // GET /api/v1/urls/expired addition (UrlItemController), for the same reason: it is now a
-    // reserved literal path segment and must never be assignable as a real alias, or that alias
-    // would be permanently unreachable via GET.
-    private static final Set<String> RESERVED_EXACT = Set.of("api", "healthz", "metrics", "favicon.ico", "expired");
+    // for that reason when the service moved to Spring Boot.
+    private static final Set<String> RESERVED_EXACT = Set.of("api", "healthz", "metrics", "favicon.ico");
 
     private AliasValidator() {
     }

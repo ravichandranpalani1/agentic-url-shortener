@@ -12,58 +12,21 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
- * Handles the /api/v1/urls/{code} and /api/v1/urls/{code}/analytics resources
- * (GET info, GET analytics, DELETE), plus GET /api/v1/urls/expired.
- *
- * <p>Brownfield addition: GET /api/v1/urls/expired lists short codes that are
- * past their TTL but not yet soft-deleted, so an operator (or a scheduled
- * cleanup job) doesn't have to scan every record by hand.
- *
- * <p>Unlike the original zero-dependency version -- where this had to be
- * handled as a branch inside the {@code {code}} handler to avoid a raw
- * string-prefix routing collision in {@code com.sun.net.httpserver} -- this
- * can simply be its own {@code @GetMapping("/api/v1/urls/expired")}: Spring
- * MVC always prefers the more specific literal mapping over the
- * {@code {code}} path-variable mapping for an exact path match, so the two
- * routes never collide in the first place. {@link com.schwab.urlshortener.validation.AliasValidator}
- * still reserves the exact word "expired" so a record can never be created
- * that would be unreachable via GET /api/v1/urls/{code} (shadowed by this
- * more specific mapping) -- see its javadoc and docs/testing-and-limitations.md.
+ * Handles the /api/v1/urls/{code} and /api/v1/urls/{code}/analytics
+ * resources: GET (info), GET .../analytics, DELETE (soft delete).
  */
 @RestController
 public class UrlItemController {
-
-    private static final int EXPIRED_LIST_LIMIT = 1000;
 
     private final UrlStore store;
 
     public UrlItemController(UrlStore store) {
         this.store = store;
-    }
-
-    @GetMapping("/api/v1/urls/expired")
-    public Map<String, Object> listExpired() {
-        long now = System.currentTimeMillis();
-        List<Map<String, Object>> expired = new ArrayList<>();
-        for (UrlRecord record : store.recent(EXPIRED_LIST_LIMIT)) {
-            if (record.active() && record.isExpired(now)) {
-                Map<String, Object> m = new LinkedHashMap<>();
-                m.put("code", record.code());
-                m.put("longUrl", record.longUrl());
-                m.put("expiresAt", record.expiresAtMillis());
-                expired.add(m);
-            }
-        }
-        Map<String, Object> body = new LinkedHashMap<>();
-        body.put("count", expired.size());
-        body.put("items", expired);
-        return body;
     }
 
     @GetMapping("/api/v1/urls/{code}")

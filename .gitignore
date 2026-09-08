@@ -7,3 +7,7 @@ out/
 # OS / editor cruft
 .DS_Store
 *.swp
+# Maven build output for service/ (compiled classes, the packaged jar, surefire reports)
+service/target/
+# Git bundle files used for one-off transport of commits -- never part of the project itself
+*.bundle

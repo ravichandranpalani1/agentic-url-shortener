@@ -17,7 +17,6 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Handles GET /{code}: the actual redirect. Registered as a catch-all
@@ -27,16 +26,6 @@ import java.util.concurrent.RejectedExecutionException;
  * <p>Click analytics are recorded on a background executor so a slow or
  * blocked analytics write can never add latency to the redirect itself --
  * the single most latency-sensitive path in the service.
- *
- * <p>APPROVED interpretation of "make analytics more reliable" (see
- * docs/scenarios/03-ambiguous.md): the analytics submission itself is
- * defended against {@link RejectedExecutionException} -- if the analytics
- * executor is ever saturated or shutting down, the click is logged as
- * dropped instead of the exception propagating out of the redirect handler.
- * This keeps the original async-by-design guarantee (redirect latency never
- * depends on the analytics write) while closing the one gap in it: an
- * executor-level rejection used to be able to surface as an uncaught
- * exception on the request thread.
  */
 @RestController
 public class RedirectController {
@@ -75,21 +64,15 @@ public class RedirectController {
         String referrer = httpRequest.getHeader("Referer");
         String userAgent = httpRequest.getHeader("User-Agent");
         String clientHash = ClientHash.of(clientKey(httpRequest));
-        try {
-            analyticsExecutor.submit(() -> {
-                try {
-                    store.recordClick(new ClickEvent(code, now, referrer, userAgent, clientHash));
-                } catch (RuntimeException e) {
-                    // Analytics is best-effort: a failure here must never surface to the client,
-                    // who has already received their redirect.
-                    System.err.println("Failed to record click for " + code + ": " + e.getMessage());
-                }
-            });
-        } catch (RejectedExecutionException e) {
-            // The analytics executor is saturated or shutting down. Degrade to a logged drop
-            // rather than letting the rejection propagate out of an already-completed redirect.
-            System.err.println("Analytics executor rejected click for " + code + "; click dropped: " + e.getMessage());
-        }
+        analyticsExecutor.submit(() -> {
+            try {
+                store.recordClick(new ClickEvent(code, now, referrer, userAgent, clientHash));
+            } catch (RuntimeException e) {
+                // Analytics is best-effort: a failure here must never surface to the client,
+                // who has already received their redirect.
+                System.err.println("Failed to record click for " + code + ": " + e.getMessage());
+            }
+        });
 
         return ResponseEntity.status(HttpStatus.FOUND)
                 .headers(headers -> headers.setLocation(URI.create(record.longUrl())))
